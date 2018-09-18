@@ -186,6 +186,11 @@ func (a *App) createTransaction(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
+	if trans.ExternalSource != "" && !isValidEmail(trans.ExternalSource) {
+		respondWithError(w, http.StatusBadRequest, "Invalid Email Address")
+		return
+	}
+
 	err = trans.createTransaction(a.DB)
 	if err != nil {
 		if strings.Contains(err.Error(), "a foreign key constraint fails") {
