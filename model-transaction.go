@@ -84,3 +84,30 @@ func (trans *Transaction) createTransaction(db *sql.DB) error {
 	trans.TransactionID = uint64(id)
 	return nil
 }
+
+func (trans *Transaction) getTransactions(db *sql.DB) ([]Transaction, error) {
+	var q string = `SELECT tl.destination, tl.transaction_time, tl.transaction_id, COALESCE(tl.source_external,""), COALESCE(tl.source_internal,0), tl.amount, COALESCE(acc.name,"")
+									FROM transaction_log tl
+									LEFT JOIN account acc ON acc.account_id = tl.source_internal
+									ORDER BY transaction_time DESC`
+	rows, err := db.Query(q)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	transactions := []Transaction{}
+	for rows.Next() {
+		var t Transaction
+		err := rows.Scan(&t.DepositDest, &t.TransactionTime, &t.TransactionID, &t.ExternalSource, &t.InternalSource, &t.Amount, &t.Name)
+
+		if err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, t)
+	}
+
+	return transactions, nil
+}

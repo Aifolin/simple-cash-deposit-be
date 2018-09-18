@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -38,10 +40,13 @@ func (a *App) Run(addr string) {
 }
 
 func (a *App) initializeRoutes() {
+	a.Router.HandleFunc("/account", a.getAccounts).Methods("GET")
 	a.Router.HandleFunc("/account/{accountid:[0-9]+}", a.getAccount).Methods("GET")
-	a.Router.HandleFunc("/account/{accountid:[0-9]+}/history", a.getHistory).Methods("GET")
 	a.Router.HandleFunc("/account", a.createAccount).Methods("POST")
+
+	a.Router.HandleFunc("/transaction", a.getTransactions).Methods("GET")
 	a.Router.HandleFunc("/transaction", a.createTransaction).Methods("POST")
+	a.Router.HandleFunc("/account/{accountid:[0-9]+}/history", a.getHistory).Methods("GET")
 }
 
 func (a *App) getAccount(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +73,23 @@ func (a *App) getAccount(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, acc)
 }
 
+func (a *App) getAccounts(w http.ResponseWriter, r *http.Request) {
+	acc := Account{}
+
+	accounts, err := acc.getAccounts(a.DB)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusNotFound, "Account not found")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, accounts)
+}
+
 func (a *App) getHistory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
@@ -83,7 +105,25 @@ func (a *App) getHistory(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			respondWithError(w, http.StatusNotFound, "Account not found")
+			respondWithError(w, http.StatusNotFound, "No transaction history found")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, trans)
+
+}
+
+func (a *App) getTransactions(w http.ResponseWriter, r *http.Request) {
+	t := Transaction{}
+
+	trans, err := t.getTransactions(a.DB)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusNotFound, "No transaction history found")
 		default:
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
@@ -106,8 +146,27 @@ func (a *App) createAccount(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
+	if !isValidIDCard(acc.IDCard) {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID Card")
+		return
+	}
+
+	if !isValidName(acc.Name) {
+		respondWithError(w, http.StatusBadRequest, "Invalid Name")
+		return
+	}
+
+	if !isValidEmail(acc.Email) {
+		respondWithError(w, http.StatusBadRequest, "Invalid Email Address")
+		return
+	}
+
 	err = acc.createAccount(a.DB)
 	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			respondWithError(w, http.StatusBadRequest, "Account exists!")
+			return
+		}
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -129,6 +188,11 @@ func (a *App) createTransaction(w http.ResponseWriter, r *http.Request) {
 
 	err = trans.createTransaction(a.DB)
 	if err != nil {
+		if strings.Contains(err.Error(), "a foreign key constraint fails") {
+			respondWithError(w, http.StatusNotFound, "Invalid Account ID")
+			return
+		}
+
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -179,3 +243,7 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
+
+var isValidName = regexp.MustCompile(`^[a-zA-Z\s]{3,100}$`).MatchString
+var isValidIDCard = regexp.MustCompile(`^[0-9]{16}$`).MatchString
+var isValidEmail = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$").MatchString
