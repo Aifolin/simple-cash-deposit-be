@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -36,7 +37,19 @@ func (a *App) Initialize(user, password, dbname string) {
 }
 
 func (a *App) Run(addr string) {
-	log.Fatal(http.ListenAndServe(addr, a.Router))
+
+	// CORS handler for development
+	if os.Getenv("APP_ENV") != "production" {
+		headersOK := handlers.AllowedHeaders([]string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"})
+		originsOK := handlers.AllowedOrigins([]string{"*"})
+		methodsOK := handlers.AllowedMethods([]string{"POST", "GET", "OPTIONS", "PUT", "DELETE"})
+
+		log.Fatal(http.ListenAndServe(addr, handlers.CORS(originsOK, headersOK, methodsOK)(a.Router)))
+
+	} else {
+		log.Fatal(http.ListenAndServe(addr, a.Router))
+	}
+
 }
 
 func (a *App) initializeRoutes() {
@@ -46,6 +59,7 @@ func (a *App) initializeRoutes() {
 
 	a.Router.HandleFunc("/transaction", a.getTransactions).Methods("GET")
 	a.Router.HandleFunc("/transaction", a.createTransaction).Methods("POST")
+	a.Router.HandleFunc("/account/{accountid:[0-9]+}/history", a.getHistory).Methods("GET")
 	a.Router.HandleFunc("/account/{accountid:[0-9]+}/history", a.getHistory).Methods("GET")
 }
 
