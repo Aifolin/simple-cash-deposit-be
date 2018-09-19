@@ -60,7 +60,6 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/transaction", a.getTransactions).Methods("GET")
 	a.Router.HandleFunc("/transaction", a.createTransaction).Methods("POST")
 	a.Router.HandleFunc("/account/{accountid:[0-9]+}/history", a.getHistory).Methods("GET")
-	a.Router.HandleFunc("/account/{accountid:[0-9]+}/history", a.getHistory).Methods("GET")
 }
 
 func (a *App) getAccount(w http.ResponseWriter, r *http.Request) {
