@@ -41,7 +41,7 @@ func (acc *Account) createAccount(db *sql.DB) error {
 }
 
 func (acc *Account) getAccounts(db *sql.DB) ([]Account, error) {
-	var q string = `SELECT acc.id_card_number, acc.name, acc.email, COALESCE(SUM(tl.amount),0) AS balance
+	var q string = `SELECT acc.account_id, acc.id_card_number, acc.name, acc.email, COALESCE(SUM(tl.amount),0) AS balance
 									FROM account acc
 									LEFT JOIN transaction_log tl ON tl.destination = acc.account_id
 									GROUP BY acc.id_card_number
@@ -59,7 +59,7 @@ func (acc *Account) getAccounts(db *sql.DB) ([]Account, error) {
 	accounts := []Account{}
 	for rows.Next() {
 		var accnt Account
-		err := rows.Scan(&accnt.IDCard, &accnt.Name, &accnt.Email, &accnt.Balance)
+		err := rows.Scan(&accnt.AccountID, &accnt.IDCard, &accnt.Name, &accnt.Email, &accnt.Balance)
 
 		if err != nil {
 			return nil, err

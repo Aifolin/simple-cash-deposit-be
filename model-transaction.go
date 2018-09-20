@@ -17,7 +17,7 @@ type Transaction struct {
 }
 
 func (trans *Transaction) getHistory(db *sql.DB) ([]Transaction, error) {
-	var q string = `SELECT tl.destination, tl.transaction_time, tl.transaction_id, COALESCE(tl.source_external,""), COALESCE(tl.source_internal,0), tl.amount, COALESCE(acc.name,"")
+	var q string = `SELECT tl.destination, tl.transaction_time, tl.transaction_id, COALESCE(tl.source_external,""), COALESCE(tl.source_internal,0), tl.amount, COALESCE(acc.name,""), COALESCE(acc.email,"")
 									FROM transaction_log tl
 									LEFT JOIN account acc ON acc.account_id = tl.source_internal
 									WHERE destination = ?
@@ -33,7 +33,7 @@ func (trans *Transaction) getHistory(db *sql.DB) ([]Transaction, error) {
 	transactions := []Transaction{}
 	for rows.Next() {
 		var t Transaction
-		err := rows.Scan(&t.DepositDest, &t.TransactionTime, &t.TransactionID, &t.ExternalSource, &t.InternalSource, &t.Amount, &t.Name)
+		err := rows.Scan(&t.DepositDest, &t.TransactionTime, &t.TransactionID, &t.ExternalSource, &t.InternalSource, &t.Amount, &t.Name, &t.InternalSourceEmail)
 
 		if err != nil {
 			return nil, err
@@ -82,11 +82,15 @@ func (trans *Transaction) createTransaction(db *sql.DB) error {
 		return err
 	}
 	trans.TransactionID = uint64(id)
+	q = `SELECT transaction_time
+			FROM transaction_log
+			WHERE transaction_id = ?`
+	db.QueryRow(q, trans.TransactionID).Scan(&trans.TransactionTime)
 	return nil
 }
 
 func (trans *Transaction) getTransactions(db *sql.DB) ([]Transaction, error) {
-	var q string = `SELECT tl.destination, tl.transaction_time, tl.transaction_id, COALESCE(tl.source_external,""), COALESCE(tl.source_internal,0), tl.amount, COALESCE(acc.name,"")
+	var q string = `SELECT tl.destination, tl.transaction_time, tl.transaction_id, COALESCE(tl.source_external,""), COALESCE(tl.source_internal,0), tl.amount, COALESCE(acc.name,""), COALESCE(acc.email,"")
 									FROM transaction_log tl
 									LEFT JOIN account acc ON acc.account_id = tl.source_internal
 									ORDER BY transaction_time DESC`
@@ -101,7 +105,7 @@ func (trans *Transaction) getTransactions(db *sql.DB) ([]Transaction, error) {
 	transactions := []Transaction{}
 	for rows.Next() {
 		var t Transaction
-		err := rows.Scan(&t.DepositDest, &t.TransactionTime, &t.TransactionID, &t.ExternalSource, &t.InternalSource, &t.Amount, &t.Name)
+		err := rows.Scan(&t.DepositDest, &t.TransactionTime, &t.TransactionID, &t.ExternalSource, &t.InternalSource, &t.Amount, &t.Name, &t.InternalSourceEmail)
 
 		if err != nil {
 			return nil, err
