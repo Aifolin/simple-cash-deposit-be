@@ -1,6 +1,6 @@
 # Cash Deposit Backend REST API
 
-### A Cash Deposit Backend REST API based on Go and MySQL
+### A Cash Deposit Backend REST API based on Go and MySQL included with Unit Test
 ----------
 ## Introduction
 Features:
@@ -11,14 +11,54 @@ Features:
 5. Email notification for every deposit made via the app
 
 Dependencies:
-1. [godotenv](github.com/joho/godotenv)
-2. [mysql driver](github.com/go-sql-driver/mysql)
-3. [gorilla/mux router](github.com/gorilla/mux)
-4. [gorilla/handlers](github.com/gorilla/handlers)
+1. [godotenv](https://github.com/joho/godotenv)
+2. [mysql driver](https://github.com/go-sql-driver/mysql)
+3. [gorilla/mux router](https://github.com/gorilla/mux)
+4. [gorilla/handlers](https://github.com/gorilla/handlers)
 
 Design Documents:
 - [Google Drive](https://drive.google.com/drive/folders/1u6Mjjt-G1yT-WPKTVegYorq0hi2tmDP5?usp=sharing)
  
+----------
+## How to use
+0. You should already have ```Go``` installed in your local machine/server.
+1. Before using this app, first you need to install all the dependencies stated above using ```go get```
+2. Rename .env.example to .env and configure the variables there to match your environment.
+
+### Development
+Run:
+```
+go run main.go app.go model-account.go model-transaction.go
+```
+
+### Production
+Run:
+```
+go build
+```
+and then execute the generated binary file
+
+### Unit test
+What's being tested?
+1. Emptying table
+2. Getting a non existent account
+3. Getting an account and its balance
+4. Creating a duplicate account
+5. Creating account with invalid ID card number
+6. Creating an account with invalid name
+7. Creating an account with invalid email address
+8. Creating a deposit from a registered account (email test included)
+9. Creating a deposit from an unregistered account (email test included)
+10. Creating a deposit with an invalid non-account email address
+11. Creating a deposit with invalid account number as its source
+12. Creating a deposit with invalid account number as its destination
+13. Creating a deposit with invalid amount
+
+Run:
+```
+go test -v
+```
+
 ----------
  
 ## API Usage
@@ -42,9 +82,10 @@ Get a list of all accounts
   GET /account
 ```
 **Request Parameters**
-|Property|Type |Required|Description|
-|--------|-----|--------|-----------|
-|-       |-    |-       |-          |
+
+| Property | Type  | Required | Description |
+| -------- | ----- | -------- | ----------- |
+| -        | -     | -        | -           |
 
 **Example**
 
@@ -96,9 +137,10 @@ Get the details of an existing account
   GET /account/{account_id}
 ```
 **Request Parameters**
-|Property|Type |Required|Description|
-|--------|-----|--------|-----------|
-|-       |-    |-       |-          |
+
+| Property | Type  | Required | Description |
+| -------- | ----- | -------- | ----------- |
+| -        | -     | -        | -           |
 
 **Example**
 
@@ -135,11 +177,12 @@ Create a new account
   POST /account
 ```
 **Request Parameters**
-|Property   |Type    |Required  |Description                                            |
-|-----------|--------|----------|-------------------------------------------------------|
-|idcardno   |string  |Yes       |A valid Indonesian ID card number (16 characters long) |
-|name       |string  |Yes       |Name of the customer                                   |
-|email      |string  |Yes       |A valid customer email address                         | 
+
+| Property    | Type     | Required   | Description                                             |
+| ----------- | -------- | ---------- | ------------------------------------------------------- |
+| idcardno    | string   | Yes        | A valid Indonesian ID card number (16 characters long)  |
+| name        | string   | Yes        | Name of the customer                                    |
+| email       | string   | Yes        | A valid customer email address                          | 
 
 **Example**
 
@@ -201,9 +244,10 @@ Get a list of all deposit history
   GET /transaction
 ```
 **Request Parameters**
-|Property|Type |Required|Description|
-|--------|-----|--------|-----------|
-|-       |-    |-       |-          |
+
+| Property | Type  | Required | Description |
+| -------- | ----- | -------- | ----------- |
+| -        | -     | -        | -           |
 
 **Example**
 
@@ -264,9 +308,10 @@ Get a cash deposit history of an account
   GET /account/{account_id}/history
 ```
 **Request Parameters**
-|Property|Type |Required|Description|
-|--------|-----|--------|-----------|
-|-       |-    |-       |-          |
+
+| Property | Type  | Required | Description |
+| -------- | ----- | -------- | ----------- |
+| -        | -     | -        | -           |
 
 **Example**
 
@@ -317,12 +362,13 @@ Create a new cash deposit to an existing account
   POST /transaction
 ```
 **Request Parameters**
-|Property       |Type       |Required  |Description                   |
-|---------------|-----------|----------|------------------------------|
-|depositdest    |int        |Yes       |A valid account id            |
-|externalsource |string     |Yes*      |Email address of the depositor|
-|internalsource |int        |Yes*      |A valid account id            | 
-|amount         |int/float  |Yes       |Deposit amount (in Rupiah)    |
+
+| Property       | Type        | Required   | Description                    |
+| -------------- | ----------- | ---------- | ------------------------------ |
+| depositdest    | int         | Yes        | A valid account id             |
+| externalsource | string      | Yes*       | Email address of the depositor |
+| internalsource | int         | Yes*       | A valid account id             | 
+| amount         | int/float   | Yes        | Deposit amount (in Rupiah)     |
 *) Only one of ```externalsource``` or ```internalsource``` should present in the request parameters
 
 **Example**
